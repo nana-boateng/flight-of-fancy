@@ -1,0 +1,17 @@
+{
+  "name": "hibid",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@puppeteer/browsers": "^2.12.1",
+    "puppeteer": "^24.37.3",
+    "puppeteer-core": "^24.37.3"
+  }
+}

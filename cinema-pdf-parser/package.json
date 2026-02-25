@@ -1,0 +1,129 @@
+{
+  "name": "cinema-pdf-parser",
+  "version": "1.0.0",
+  "description": "Secure TypeScript-based PDF parser for theatre calendar data with template-based algorithms",
+  "main": "dist/index.js",
+  "bin": {
+    "cinema-parser": "dist/cli/index.js"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "bun build ./src/index.ts --outdir ./dist --target node --minify",
+    "dev": "bun --watch src/index.ts",
+    "start": "bun dist/index.js",
+    "test": "bun test",
+    "test:unit": "bun test test/unit",
+    "test:integration": "bun test test/integration",
+    "test:security": "bun test test/security",
+    "test:performance": "bun test test/performance",
+    "test:coverage": "bun test --coverage",
+    "test:watch": "bun test --watch",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "benchmark": "bun test test/performance --reporter=verbose",
+    "prepublishOnly": "bun run build && bun run test",
+    "clean": "rm -rf dist",
+    "docs:build": "typedoc src/index.ts",
+    "security:audit": "bun audit",
+    "prepare": "husky install"
+  },
+  "keywords": [
+    "pdf",
+    "parser",
+    "cinema",
+    "theatre",
+    "movies",
+    "calendar",
+    "ocr",
+    "typescript",
+    "security"
+  ],
+  "author": {
+    "name": "Cinema Parser Team",
+    "email": "team@cinemaparser.com"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/cinema-pdf-parser.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/cinema-pdf-parser/issues"
+  },
+  "homepage": "https://github.com/your-org/cinema-pdf-parser#readme",
+  "engines": {
+    "bun": ">=1.0.0",
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "cli-progress": "^3.12.0",
+    "commander": "^11.1.0",
+    "date-fns": "^2.30.0",
+    "inquirer": "^9.2.12",
+    "joi": "^17.11.0",
+    "lodash": "^4.17.21",
+    "ora": "^7.0.1",
+    "pdf-lib": "^1.17.1",
+    "tesseract.js": "^5.1.1",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.14.200",
+    "@types/node": "^20.19.32",
+    "@types/uuid": "^9.0.6",
+    "@typescript-eslint/eslint-plugin": "^6.9.1",
+    "@typescript-eslint/parser": "^6.9.1",
+    "@vitest/coverage-v8": "^0.34.6",
+    "benchmark": "^2.1.4",
+    "eslint": "^8.52.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-security": "^1.7.1",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.0.2",
+    "nock": "^13.3.8",
+    "prettier": "^3.0.3",
+    "sinon": "^17.0.1",
+    "typedoc": "^0.25.2",
+    "typescript": "^5.2.2",
+    "vitest": "^0.34.6"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "prettier --write",
+      "git add"
+    ]
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./cli": {
+      "types": "./dist/cli/index.d.ts",
+      "import": "./dist/cli/index.js"
+    },
+    "./constants": {
+      "types": "./dist/constants/index.d.ts",
+      "import": "./dist/constants/index.js"
+    }
+  },
+  "config": {
+    "maxFileSize": 52428800,
+    "maxTimeout": 30000,
+    "defaultTemplate": "revue-cinema"
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/your-org"
+  }
+}
