@@ -1,41 +1,48 @@
-import { config } from "./config";
-import type { AuctionItem } from "./types";
+import type { NtfySettings } from './types';
 
-export async function sendNotification(items: AuctionItem[]): Promise<void> {
-  if (items.length === 0) {
-    console.log("No items to notify");
-    return;
+function sanitizeHeaderValue(input: string): string {
+  return input.replace(/[\r\n]+/g, ' ').trim();
+}
+
+function safeClickUrl(input: string): string {
+  try {
+    const parsed = new URL(input);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return parsed.toString();
+    }
+  } catch {
+    return 'https://ontario.hibid.com';
   }
 
-  const server = config.ntfy.server ?? "https://ntfy.sh";
-  const url = `${server}/${config.ntfy.topic}`;
+  return 'https://ontario.hibid.com';
+}
 
-  const count = items.length;
-  const title = count === 1 ? "1 Deal Found!" : `${count} Deals Found!`;
-
-  const body = items
-    .map((item) => `• ${item.title} - $${item.currentBid}`)
-    .join("\n");
-
+export async function sendNtfyNotification(input: {
+  settings: NtfySettings;
+  title: string;
+  message: string;
+  clickUrl: string;
+  priority: '3' | '4';
+}): Promise<void> {
+  const url = `${input.settings.server.replace(/\/$/, '')}/${input.settings.topic}`;
   const headers: Record<string, string> = {
-    Title: title,
-    Tags: "shopping,bargain",
-    Priority: "high",
+    Title: sanitizeHeaderValue(input.title),
+    Priority: input.priority,
+    Tags: 'auction,deal',
+    Click: safeClickUrl(input.clickUrl),
   };
 
-  if (config.ntfy.token) {
-    headers.Authorization = config.ntfy.token;
+  if (input.settings.token) {
+    headers.Authorization = `Bearer ${input.settings.token}`;
   }
 
   const response = await fetch(url, {
-    method: "POST",
+    method: 'POST',
     headers,
-    body,
+    body: input.message,
   });
 
   if (!response.ok) {
-    throw new Error(`Notification failed with status ${response.status}`);
+    throw new Error(`ntfy rejected message (${response.status})`);
   }
-
-  console.log(`Notification sent: ${title}`);
 }

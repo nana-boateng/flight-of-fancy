@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HiBid Bargain Radar</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <p class="eyebrow">Ontario Auction Intelligence</p>
+        <h1>HiBid Bargain Radar</h1>
+        <p class="subtitle">
+          Track Amazon products, scan ontario.hibid.com hourly, and get ntfy alerts when a
+          matching lot drops below 70% of reference price with less than 1 hour left.
+        </p>
+      </header>
+
+      <section class="card">
+        <h2>Add Watch</h2>
+        <form id="watch-form">
+          <label>
+            Amazon product URL
+            <input id="amazon-url" type="url" required placeholder="https://www.amazon.ca/dp/..." />
+          </label>
+
+          <label>
+            Keywords (comma-separated)
+            <input id="keywords" type="text" required placeholder="macbook,apple laptop,m3" />
+          </label>
+
+          <label>
+            Manual title (optional)
+            <input id="manual-title" type="text" placeholder="MacBook Air 15" />
+          </label>
+
+          <label>
+            Manual reference price CAD (optional fallback)
+            <input id="manual-price" type="number" min="0" step="0.01" placeholder="1499.99" />
+          </label>
+
+          <button type="submit">Add watch</button>
+        </form>
+        <p id="form-status" class="status"></p>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <div class="card-head">
+            <h2>Watches</h2>
+            <button id="refresh-btn" class="ghost">Refresh</button>
+          </div>
+          <div id="watches" class="list"></div>
+        </article>
+
+        <article class="card">
+          <div class="card-head">
+            <h2>Recent Matches</h2>
+            <button id="scan-btn">Run scan now</button>
+          </div>
+          <div id="run-status" class="status"></div>
+          <div id="matches" class="list"></div>
+        </article>
+      </section>
+
+      <section class="card">
+        <h2>ntfy Settings</h2>
+        <form id="ntfy-form" class="ntfy-form">
+          <label>
+            Server URL
+            <input id="ntfy-server" type="url" required placeholder="https://ntfy.sh" />
+          </label>
+          <label>
+            Topic
+            <input id="ntfy-topic" type="text" required placeholder="hibid-alerts" />
+          </label>
+          <label>
+            Token (optional)
+            <input id="ntfy-token" type="text" placeholder="Bearer token" />
+          </label>
+          <button type="submit">Save ntfy settings</button>
+        </form>
+        <p id="ntfy-status" class="status"></p>
+      </section>
+    </main>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

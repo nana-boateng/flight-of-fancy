@@ -26,6 +26,9 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .eslintcache
 .cache
 *.tsbuildinfo
+hibid.db
+hibid.db-shm
+hibid.db-wal
 
 # IntelliJ based IDEs
 .idea

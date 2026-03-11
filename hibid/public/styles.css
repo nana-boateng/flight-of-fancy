@@ -1,0 +1,134 @@
+:root {
+  --bg: #f4efe6;
+  --ink: #221f1a;
+  --muted: #62584a;
+  --card: #fff9ef;
+  --accent: #9a3412;
+  --accent-soft: #f97316;
+  --border: #e8d8bd;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Trebuchet MS', 'Gill Sans', sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 12% 12%, #f7d8a2 0%, transparent 45%),
+    radial-gradient(circle at 88% 18%, #f9c7b0 0%, transparent 38%),
+    linear-gradient(140deg, #f5ede0 0%, #efe2ce 100%);
+  min-height: 100vh;
+}
+
+.shell {
+  width: min(1080px, 95vw);
+  margin: 0 auto;
+  padding: 2rem 0 3rem;
+}
+
+.hero h1 {
+  margin: 0.3rem 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+.subtitle {
+  max-width: 70ch;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.card {
+  background: color-mix(in srgb, var(--card) 90%, white 10%);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1rem;
+  margin-top: 1rem;
+  box-shadow: 0 12px 28px rgba(34, 31, 26, 0.08);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.94rem;
+}
+
+input {
+  border: 1px solid #ccb591;
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+  background: #fff;
+}
+
+button {
+  border: 1px solid var(--accent);
+  background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+  color: #fff;
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button.ghost {
+  background: transparent;
+  color: var(--accent);
+}
+
+.status {
+  min-height: 1.2rem;
+  color: var(--muted);
+  margin: 0.5rem 0 0;
+}
+
+.list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.list-item {
+  border: 1px solid var(--border);
+  background: #fffcf6;
+  border-radius: 10px;
+  padding: 0.6rem;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.ntfy-form {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+}
+
+@media (max-width: 900px) {
+  .grid,
+  .ntfy-form {
+    grid-template-columns: 1fr;
+  }
+}
