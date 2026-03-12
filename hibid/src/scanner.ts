@@ -1,6 +1,6 @@
 import type { AppConfig } from './config';
 import type { AppDb } from './db';
-import { scrapeLotsByKeywords } from './hibid';
+import { extractLotIdFromUrl, scrapeLotsByDirectUrls, scrapeLotsByKeywords } from './hibid';
 import { sendNtfyNotification } from './notify';
 import type { ScanSummary, WatchProduct } from './types';
 
@@ -67,8 +67,20 @@ export class ScanService {
       const keywords = Array.from(
         new Set(watches.flatMap((watch) => watch.keywords.map((keyword) => keyword.toLowerCase()))),
       );
+      const directHibidUrls = Array.from(
+        new Set(watches.flatMap((watch) => watch.hibidUrls || [])),
+      );
 
-      const lots = await scrapeLotsByKeywords(this.config, keywords);
+      const [keywordLots, directLots] = await Promise.all([
+        scrapeLotsByKeywords(this.config, keywords),
+        scrapeLotsByDirectUrls(this.config, directHibidUrls),
+      ]);
+      const lotMap = new Map(keywordLots.map((lot) => [lot.lotId, lot]));
+      for (const lot of directLots) {
+        lotMap.set(lot.lotId, lot);
+      }
+      const lots = Array.from(lotMap.values());
+
       for (const lot of lots) {
         this.db.upsertLot(lot);
       }
@@ -78,8 +90,16 @@ export class ScanService {
       const ntfy = this.db.getNtfySettings();
 
       for (const watch of watches) {
+        const directLotIds = new Set(
+          (watch.hibidUrls || [])
+            .map((url) => extractLotIdFromUrl(url))
+            .filter((value): value is string => value !== null),
+        );
+
         for (const lot of lots) {
-          if (!keywordMatch(watch, lot.title)) {
+          const matchesKeyword = keywordMatch(watch, lot.title);
+          const matchesDirectLot = directLotIds.has(lot.lotId);
+          if (!matchesKeyword && !matchesDirectLot) {
             continue;
           }
           if (lot.minutesRemaining === null || lot.minutesRemaining > this.config.maxEndingMinutes) {

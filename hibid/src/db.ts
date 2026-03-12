@@ -3,8 +3,6 @@ import type { DashboardState, NtfySettings, ScanSummary, WatchProduct } from './
 
 interface RawWatchRow {
   id: number;
-  amazon_url: string;
-  asin: string | null;
   title: string;
   reference_price_cents: number;
   price_source: 'auto' | 'manual';
@@ -15,11 +13,11 @@ interface RawWatchRow {
 
 export interface UpsertWatchInput {
   id?: number;
-  amazonUrl: string;
-  asin: string | null;
   title: string;
   referencePriceCents: number;
   priceSource: 'auto' | 'manual';
+  sourceUrls: string[];
+  hibidUrls: string[];
   keywords: string[];
   active?: boolean;
 }
@@ -44,14 +42,28 @@ export class AppDb {
 
       CREATE TABLE IF NOT EXISTS watch_products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        amazon_url TEXT NOT NULL,
-        asin TEXT,
         title TEXT NOT NULL,
         reference_price_cents INTEGER NOT NULL,
         price_source TEXT NOT NULL CHECK(price_source IN ('auto','manual')),
         active INTEGER NOT NULL DEFAULT 1,
         created_at_ms INTEGER NOT NULL,
         updated_at_ms INTEGER NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS watch_source_urls (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        watch_id INTEGER NOT NULL,
+        url TEXT NOT NULL,
+        FOREIGN KEY (watch_id) REFERENCES watch_products(id) ON DELETE CASCADE,
+        UNIQUE (watch_id, url)
+      );
+
+      CREATE TABLE IF NOT EXISTS watch_hibid_urls (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        watch_id INTEGER NOT NULL,
+        url TEXT NOT NULL,
+        FOREIGN KEY (watch_id) REFERENCES watch_products(id) ON DELETE CASCADE,
+        UNIQUE (watch_id, url)
       );
 
       CREATE TABLE IF NOT EXISTS watch_keywords (
@@ -108,6 +120,38 @@ export class AppDb {
         error_message TEXT
       );
     `);
+
+    // Migration: drop legacy columns if they exist (from v1 amazon-only schema)
+    try {
+      const cols = this.db
+        .query("PRAGMA table_info('watch_products')")
+        .all() as Array<{ name: string }>;
+      const colNames = cols.map((col) => col.name);
+      if (colNames.includes('amazon_url') || colNames.includes('asin')) {
+        // Old schema detected — move data to new tables then rebuild
+        this.migrateFromV1();
+      }
+    } catch {
+      // table doesn't exist yet, that's fine
+    }
+  }
+
+  private migrateFromV1(): void {
+    // Check if watch_source_urls already has data (migration already ran)
+    const count = this.db
+      .query('SELECT COUNT(*) AS cnt FROM watch_source_urls')
+      .get() as { cnt: number } | null;
+    if (count && count.cnt > 0) return;
+
+    // Copy amazon_url into watch_source_urls for existing watches
+    try {
+      this.db.exec(`
+        INSERT OR IGNORE INTO watch_source_urls (watch_id, url)
+        SELECT id, amazon_url FROM watch_products WHERE amazon_url IS NOT NULL AND amazon_url != ''
+      `);
+    } catch {
+      // Column doesn't exist — nothing to migrate
+    }
   }
 
   private seedSettings(): void {
@@ -135,21 +179,35 @@ export class AppDb {
       'SELECT keyword FROM watch_keywords WHERE watch_id = ? ORDER BY keyword',
     );
 
+    const urlStmt = this.db.prepare(
+      'SELECT url FROM watch_source_urls WHERE watch_id = ? ORDER BY id',
+    );
+    const hibidUrlStmt = this.db.prepare(
+      'SELECT url FROM watch_hibid_urls WHERE watch_id = ? ORDER BY id',
+    );
+
     return rows.map((row) => {
       const keywords = (keywordStmt.all(row.id) as Array<{ keyword: string }>).map(
         (entry) => entry.keyword,
       );
 
+      const sourceUrls = (urlStmt.all(row.id) as Array<{ url: string }>).map(
+        (entry) => entry.url,
+      );
+      const hibidUrls = (hibidUrlStmt.all(row.id) as Array<{ url: string }>).map(
+        (entry) => entry.url,
+      );
+
       return {
         id: row.id,
-        amazonUrl: row.amazon_url,
-        asin: row.asin,
         title: row.title,
         referencePriceCents: row.reference_price_cents,
         priceSource: row.price_source,
         active: row.active === 1,
         createdAtMs: row.created_at_ms,
         updatedAtMs: row.updated_at_ms,
+        sourceUrls,
+        hibidUrls,
         keywords,
       } satisfies WatchProduct;
     });
@@ -167,9 +225,7 @@ export class AppDb {
         .prepare(
           `
             UPDATE watch_products
-            SET amazon_url = $amazon_url,
-                asin = $asin,
-                title = $title,
+            SET title = $title,
                 reference_price_cents = $reference_price_cents,
                 price_source = $price_source,
                 active = $active,
@@ -179,8 +235,6 @@ export class AppDb {
         )
         .run({
           $id: input.id,
-          $amazon_url: input.amazonUrl,
-          $asin: input.asin,
           $title: input.title,
           $reference_price_cents: input.referencePriceCents,
           $price_source: input.priceSource,
@@ -189,13 +243,12 @@ export class AppDb {
         });
 
       this.db.prepare('DELETE FROM watch_keywords WHERE watch_id = ?').run(input.id);
+      this.db.prepare('DELETE FROM watch_source_urls WHERE watch_id = ?').run(input.id);
+      this.db.prepare('DELETE FROM watch_hibid_urls WHERE watch_id = ?').run(input.id);
 
-      const insertKeyword = this.db.prepare(
-        'INSERT OR IGNORE INTO watch_keywords (watch_id, keyword) VALUES (?, ?)',
-      );
-      for (const keyword of input.keywords) {
-        insertKeyword.run(input.id, keyword.toLowerCase());
-      }
+      this.insertKeywords(input.id, input.keywords);
+      this.insertSourceUrls(input.id, input.sourceUrls);
+      this.insertHibidUrls(input.id, input.hibidUrls);
 
       const watch = this.listWatches().find((entry) => entry.id === input.id);
       if (!watch) {
@@ -208,14 +261,12 @@ export class AppDb {
       .prepare(
         `
           INSERT INTO watch_products
-            (amazon_url, asin, title, reference_price_cents, price_source, active, created_at_ms, updated_at_ms)
+            (title, reference_price_cents, price_source, active, created_at_ms, updated_at_ms)
           VALUES
-            ($amazon_url, $asin, $title, $reference_price_cents, $price_source, 1, $created_at_ms, $updated_at_ms)
+            ($title, $reference_price_cents, $price_source, 1, $created_at_ms, $updated_at_ms)
         `,
       )
       .run({
-        $amazon_url: input.amazonUrl,
-        $asin: input.asin,
         $title: input.title,
         $reference_price_cents: input.referencePriceCents,
         $price_source: input.priceSource,
@@ -224,18 +275,42 @@ export class AppDb {
       });
 
     const watchId = Number(result.lastInsertRowid);
-    const insertKeyword = this.db.prepare(
-      'INSERT OR IGNORE INTO watch_keywords (watch_id, keyword) VALUES (?, ?)',
-    );
-    for (const keyword of input.keywords) {
-      insertKeyword.run(watchId, keyword.toLowerCase());
-    }
+    this.insertKeywords(watchId, input.keywords);
+    this.insertSourceUrls(watchId, input.sourceUrls);
+    this.insertHibidUrls(watchId, input.hibidUrls);
 
     const watch = this.listWatches().find((entry) => entry.id === watchId);
     if (!watch) {
       throw new Error('Failed to create watch');
     }
     return watch;
+  }
+
+  private insertKeywords(watchId: number, keywords: string[]): void {
+    const stmt = this.db.prepare(
+      'INSERT OR IGNORE INTO watch_keywords (watch_id, keyword) VALUES (?, ?)',
+    );
+    for (const keyword of keywords) {
+      stmt.run(watchId, keyword.toLowerCase());
+    }
+  }
+
+  private insertSourceUrls(watchId: number, urls: string[]): void {
+    const stmt = this.db.prepare(
+      'INSERT OR IGNORE INTO watch_source_urls (watch_id, url) VALUES (?, ?)',
+    );
+    for (const url of urls) {
+      stmt.run(watchId, url);
+    }
+  }
+
+  private insertHibidUrls(watchId: number, urls: string[]): void {
+    const stmt = this.db.prepare(
+      'INSERT OR IGNORE INTO watch_hibid_urls (watch_id, url) VALUES (?, ?)',
+    );
+    for (const url of urls) {
+      stmt.run(watchId, url);
+    }
   }
 
   deleteWatch(id: number): void {

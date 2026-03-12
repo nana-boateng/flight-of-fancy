@@ -1,13 +1,13 @@
 export interface WatchProduct {
   id: number;
-  amazonUrl: string;
-  asin: string | null;
   title: string;
   referencePriceCents: number;
   priceSource: 'auto' | 'manual';
   active: boolean;
   createdAtMs: number;
   updatedAtMs: number;
+  sourceUrls: string[];
+  hibidUrls: string[];
   keywords: string[];
 }
 

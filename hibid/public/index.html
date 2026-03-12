@@ -12,37 +12,109 @@
         <p class="eyebrow">Ontario Auction Intelligence</p>
         <h1>HiBid Bargain Radar</h1>
         <p class="subtitle">
-          Track Amazon products, scan ontario.hibid.com hourly, and get ntfy alerts when a
-          matching lot drops below 70% of reference price with less than 1 hour left.
+          Paste product links from any retailer (Amazon, Best Buy, Walmart, etc.),
+          auto-generate keywords, and get ntfy alerts when a matching HiBid lot drops
+          below 70% of reference price with less than 1 hour left.
         </p>
       </header>
 
       <section class="card">
         <h2>Add Watch</h2>
-        <form id="watch-form">
+
+        <!-- Step 1: URLs -->
+        <div id="step-urls">
           <label>
-            Amazon product URL
-            <input id="amazon-url" type="url" required placeholder="https://www.amazon.ca/dp/..." />
+            Product URLs (one per line &mdash; add multiple for better keywords)
+            <textarea
+              id="url-input"
+              rows="3"
+              placeholder="https://www.amazon.ca/dp/B0...&#10;https://www.bestbuy.ca/en-ca/product/..."
+            ></textarea>
           </label>
 
           <label>
-            Keywords (comma-separated)
-            <input id="keywords" type="text" required placeholder="macbook,apple laptop,m3" />
+            Amazon ASIN (optional &mdash; enter if you know it)
+            <input id="manual-asin" type="text" maxlength="10" placeholder="B09V3KXJPB" />
+          </label>
+
+          <button id="analyze-btn" type="button">Analyze</button>
+          <p id="analyze-status" class="status"></p>
+
+          <hr class="divider" />
+          <h3>Add Direct HiBid Listing</h3>
+          <label>
+            HiBid lot URL
+            <input
+              id="direct-hibid-url"
+              type="url"
+              placeholder="https://ontario.hibid.com/lot/123456789/..."
+            />
+          </label>
+          <div class="row">
+            <label class="grow">
+              Custom title (optional)
+              <input id="direct-hibid-title" type="text" placeholder="Leave blank to auto-detect" />
+            </label>
+            <label>
+              Reference price (optional)
+              <input id="direct-hibid-price" type="number" min="0" step="0.01" placeholder="299.99" />
+            </label>
+          </div>
+          <button id="add-direct-btn" type="button">Add listing directly</button>
+          <p id="add-direct-status" class="status"></p>
+        </div>
+
+        <!-- Step 2: Review & confirm -->
+        <div id="step-review" class="hidden">
+          <div id="url-details"></div>
+
+          <div id="manual-banner" class="banner hidden">
+            Some URLs could not be resolved automatically.
+            Fill in the fields below manually.
+          </div>
+
+          <div class="review-grid">
+            <label class="grow">
+              Title
+              <input id="review-title" type="text" placeholder="Product name" />
+            </label>
+
+            <label>
+              Reference price ($)
+              <input id="review-price" type="number" min="0" step="0.01" placeholder="149.99" />
+            </label>
+
+            <label>
+              Price source
+              <input id="review-price-source" type="text" readonly />
+            </label>
+          </div>
+
+          <label>
+            Keywords (edit, remove, or add &mdash; comma-separated)
+            <input id="review-keywords" type="text" placeholder="ninja air fryer, af101" />
           </label>
 
           <label>
-            Manual title (optional)
-            <input id="manual-title" type="text" placeholder="MacBook Air 15" />
+            Source URLs
+            <textarea id="review-urls" rows="2" readonly></textarea>
           </label>
 
           <label>
-            Manual reference price CAD (optional fallback)
-            <input id="manual-price" type="number" min="0" step="0.01" placeholder="1499.99" />
+            Direct HiBid links (optional, one per line)
+            <textarea
+              id="review-hibid-urls"
+              rows="2"
+              placeholder="https://ontario.hibid.com/lot/123456789/..."
+            ></textarea>
           </label>
 
-          <button type="submit">Add watch</button>
-        </form>
-        <p id="form-status" class="status"></p>
+          <div class="row">
+            <button id="save-btn" type="button">Save watch</button>
+            <button id="back-btn" type="button" class="ghost">Back</button>
+          </div>
+          <p id="save-status" class="status"></p>
+        </div>
       </section>
 
       <section class="grid">
