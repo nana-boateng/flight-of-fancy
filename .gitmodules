@@ -4,3 +4,6 @@
 [submodule "hibid"]
 	path = hibid
 	url = git@github.com:nana-boateng/hibid-notifi.git
+[submodule "finance-my-film"]
+	path = finance-my-film
+	url = git@github.com:nana-boateng/finance-my-film.git
