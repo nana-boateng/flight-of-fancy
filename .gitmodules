@@ -1,0 +1,3 @@
+[submodule "fast-xml-viewer"]
+	path = fast-xml-viewer
+	url = git@github.com:nana-boateng/fast-xml-viewer.git
