@@ -1,129 +1,156 @@
-# Film Finance Finder
+# Finance Film v2
 
-An automated system that continuously searches the internet for film financing
-opportunities to help emerging filmmakers reach their funding goal of CAD
-$30,000.
+Automated film funding opportunity finder for emerging filmmakers in Toronto/Ontario/Canada.
 
 ## Features
 
-- **Daily Web Scraping**: Automatically scans Canadian funding agencies, news
-  sites, and industry feeds
-- **Smart Filtering**: Filters opportunities suitable for emerging filmmakers
-  (excludes those requiring extensive portfolios)
-- **Difficulty Scoring**: Rates each opportunity by difficulty (1-10 scale)
-- **Daily Notifications**: Sends daily digest via local `notify.sh` instance
-- **Database Tracking**: Maintains SQLite database of all opportunities and
-  progress
-- **Continuous Operation**: Runs automatically every day until funding goal is
-  reached
+- **Multi-source collection**: RSS feeds, web scraping, optional AI research
+- **Smart scoring**: Weighted scoring based on filmmaker profile fit
+- **Deduplication**: Fuzzy title matching and URL canonicalization
+- **Multi-channel notifications**: ntfy push + file log
+- **SQLite database**: Full history tracking with proper indexes
+- **CLI + cron**: Simple deployment model
 
 ## Quick Start
 
-1. Install dependencies:
-
 ```bash
-pip install -r requirements.txt
-```
+# Install dependencies
+pip install -e ".[dev]"
 
-2. Make notification script executable:
+# Run a scan
+finance-film scan
 
-```bash
-chmod +x notify.sh
-```
+# List opportunities
+finance-film list --new --limit 20
 
-3. Run the system:
+# Send digest
+finance-film notify
 
-```bash
-python film_finance_finder.py
+# Health check
+finance-film health
 ```
 
 ## Configuration
 
-Edit `config.json` to customize:
-
-- Target funding amount
-- Sources to monitor
-- Notification preferences
-- Filtering criteria
-
-## Notification Methods
-
-The system uses `notify.sh` which outputs to a log file:
-
-**Output File**: `funding_opportunities.log`
-
-Each notification includes:
-
-- Timestamp
-- Opportunity title
-- Full details
-- Clear separators for readability
-
-**To monitor opportunities:**
+Copy `.env.example` to `.env` and customize:
 
 ```bash
-tail -f funding_opportunities.log
+cp .env.example .env
 ```
 
-**To review all opportunities:**
+Key settings:
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| `FILMMAKER__TARGET_AMOUNT_CAD` | Target funding amount | 30000 |
+| `FILMMAKER__LOCATION` | Geographic focus | Toronto, Ontario, Canada |
+| `NOTIFICATIONS__NTFY_URL` | ntfy server URL | (disabled) |
+| `AI__ENABLED` | Enable AI research | false |
+
+## CLI Commands
+
+### `finance-film scan`
+
+Run the funding opportunity scan.
 
 ```bash
-cat funding_opportunities.log
+finance-film scan                    # Normal run
+finance-film scan --dry-run          # Don't persist or notify
+finance-film scan --ai               # Enable AI research
+finance-film scan --no-ai            # Disable AI research
 ```
 
-## Monitored Sources
+### `finance-film list`
 
-### Canadian Funding
+List opportunities from database.
 
-- Telefilm Canada
-- SODEC (Québec)
-- Ontario Creates
-- Creative BC
-- Other provincial agencies
+```bash
+finance-film list                    # All opportunities
+finance-film list --new              # Only new
+finance-film list --min-score 7      # Fit score >= 7
+finance-film list --limit 50         # Show 50
+```
 
-### News & Industry
+### `finance-film notify`
 
-- IndieWire
-- Variety
-- Hollywood Reporter
-- Filmmaker Magazine
-- Playback Online
+Send notification digest.
 
-### Search Monitoring
+```bash
+finance-film notify                  # Send digest of new opportunities
+finance-film notify --limit 20       # Include up to 20
+```
 
-- Film funding opportunities
-- Angel investors
-- Crowdfunding campaigns
-- Grant opportunities
+### `finance-film health`
 
-## Database
+Check system health.
 
-The system maintains two SQLite tables:
+```bash
+finance-film health
+```
 
-- `opportunities`: Tracks all funding opportunities found
-- `funding_progress`: Tracks actual funding secured
+## Cron Setup
 
-## Automation
+Add to crontab for daily runs:
 
-The system runs automatically at 9:00 AM daily and will continue operating until
-the CAD $30,000 goal is reached.
+```cron
+0 9 * * * cd /path/to/finance-my-film && /path/to/python -m finance_film.cli scan >> cron.log 2>&1
+```
 
-## Filtering Logic
+## Architecture
 
-- **Includes**: Emerging filmmaker opportunities, grants under $10,000, pitch
-  competitions
-- **Excludes**: Opportunities requiring extensive filmography, established
-  filmmaker programs
+```
+src/finance_film/
+├── cli.py              # CLI commands
+├── config.py           # Typed configuration
+├── models.py           # Domain models
+├── db/
+│   ├── models.py       # SQLAlchemy models
+│   └── repository.py   # CRUD operations
+├── sources/
+│   ├── base.py         # Source protocol
+│   ├── http_client.py  # HTTP client with retry/rate-limit
+│   ├── rss.py          # RSS feed adapter
+│   ├── web.py          # Web scraping adapter
+│   └── ai_provider.py  # AI research adapter (optional)
+├── pipeline/
+│   ├── scoring.py      # Scoring engine
+│   ├── dedup.py        # Deduplication
+│   └── runner.py       # Pipeline orchestrator
+└── notifiers/
+    ├── base.py         # Notifier protocol
+    ├── ntfy.py         # ntfy channel
+    ├── file.py         # File log channel
+    └── manager.py      # Notification coordinator
+```
 
-## Logs
+## Development
 
-- `film_finance.log`: Application logs
-- `notifications.log`: Notification history
-- `film_finance.db`: SQLite database
+```bash
+# Install dev dependencies
+pip install -e ".[dev]"
 
-## Requirements
+# Run tests
+pytest
 
-- Python 3.7+
-- Internet connection
-- `notify.sh` script (included)
-- Linux/macOS/Windows with bash
+# Lint
+ruff check src tests
+
+# Type check
+mypy src
+```
+
+## Migration from v1
+
+v2 is a complete rewrite with a fresh database. To archive v1 data:
+
+```bash
+# Archive old files
+mkdir -p .archive
+mv film_finance.db .archive/
+mv *.log .archive/
+mv film_finance_finder.py .archive/
+```
+
+## License
+
+MIT
