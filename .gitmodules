@@ -7,3 +7,6 @@
 [submodule "finance-my-film"]
 	path = finance-my-film
 	url = git@github.com:nana-boateng/finance-my-film.git
+[submodule "cinema-pdf-parser"]
+	path = cinema-pdf-parser
+	url = git@github.com:nana-boateng/cinema-pdf-parser.git
