@@ -1,3 +1,6 @@
 [submodule "fast-xml-viewer"]
 	path = fast-xml-viewer
 	url = git@github.com:nana-boateng/fast-xml-viewer.git
+[submodule "hibid"]
+	path = hibid
+	url = git@github.com:nana-boateng/hibid-notifi.git
